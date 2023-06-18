@@ -9,7 +9,6 @@ bullets = []
 mouse_pressed = False
 intime = 0.07
 update_time = time.time()
-cells = []
 map = [
     'wwwwwwwwwwwwwwwwwwwwww',
     'w  w              w  w',
@@ -22,6 +21,9 @@ map = [
     'w  w             w   w',
     'wwwwwwwwwwwwwwwwwwwwww'
 ]
+cells = []
+for _ in range(len(map)):
+    cells.append([])
 CELL_SIZE = 50
 CELLS_NUMB_X = len(map[0])
 CELLS_NUMB_Y = len(map)
@@ -31,14 +33,28 @@ SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 
 class Player:
 
-    def __init__(self, x, y, speed, r):
+    def __init__(self, x, y, speed, r, cell_x, cell_y, nearest_cells):
         self.x = x
         self.y = y
         self.speed = speed
         self.r = r
+        self.cell_x = cell_x
+        self.cell_y = cell_y
+        self.nearest_cells = nearest_cells
 
     def draw(self):
         pygame.draw.circle(SCREEN, (0, 0, 0), (self.x, self.y), self.r)
+
+
+class Cell:
+    def __init__(self, x, y, fill, type_b):
+        self.x = x
+        self.y = y
+        self.fill = fill
+        self.type_block = type_b
+
+    def draw(self):
+        pygame.draw.rect(SCREEN, self.fill, pygame.Rect(self.x, self.y, CELL_SIZE, CELL_SIZE))
 
 
 class Bullet:
@@ -75,7 +91,7 @@ class Bullet:
 def setup():
     global player
     build_map()
-    player = Player(WIDTH // 2, HEIGHT // 2, 1 / 3.5, 15)
+    player = Player(WIDTH // 2, HEIGHT // 2, 1 / 3.5, 15, 0, 0, [])
 
 
 def build_map():
@@ -83,31 +99,68 @@ def build_map():
     for y in range(len(map)):
         for x in range(len(map[y])):
             if map[y][x] in 'w':
-                cells.append((x*CELL_SIZE, y*CELL_SIZE))
+                cells[y].append(Cell(x * CELL_SIZE, y * CELL_SIZE, (139, 69, 19), 'block'))
+            else:
+                cells[y].append(Cell(x * CELL_SIZE, y * CELL_SIZE, (255, 222, 178), 'air'))
 
 
 def update():
+    global player
     move_player()
     move_bullet()
     destroy_bullets()
     shoot()
     draw_objects()
-    #for cell in cells:
-    #    collision_with_wall(cell[0])
+    find_out_cell_pos()
+    check_nearest_сells()
+    for cell in player.nearest_cells:
+        collision_with_wall(cell)
+    player.nearest_cells.clear()
 
 
 def draw_objects():
-    player.draw()
+    for row in cells:
+        for cell in row:
+            cell.draw()
     for bullet in bullets:
         bullet.draw()
-    for cell in cells:
-        pygame.draw.rect(SCREEN, (139, 69, 19), pygame.Rect(cell[0], cell[1], CELL_SIZE, CELL_SIZE))
+    player.draw()
 
 
-def collision_with_wall(x):
-    if abs(player.x - x-CELL_SIZE/2) <= player.speed:
-        print(1)
-        #player.x = x-CELL_SIZE_X/2-0.1
+def get_distance(pos):
+    return pos[0] - player.x, pos[1] - player.y
+
+
+def find_out_cell_pos():
+    global player
+    player.cell_x, player.cell_y = player.x//CELL_SIZE, player.y//CELL_SIZE
+
+
+def check_nearest_сells():
+    global player
+    starting_point = (player.cell_x - 1, player.cell_y - 1)
+    x = 0
+    while x < 3:
+        y = 0
+        while y < 3:
+            bx, by = int(starting_point[0] + x), int(starting_point[1] + y)
+            if cells[by][bx].type_block in 'block':
+                player.nearest_cells.append(cells[by][bx])
+            y += 1
+        x += 1
+        # print(player.nearest_cells)
+
+
+def collision_with_wall(block):
+    d_left_side = player.speed >= block.x - player.x - player.r <= -1
+    d_right_side = player.speed >= player.x - block.x - CELL_SIZE <= -1
+    d_up_side = player.speed >= block.y - player.y <= -1
+    d_down_side = player.speed >= player.y - block.y - CELL_SIZE <= -1
+
+    if d_left_side and d_up_side and d_down_side:
+        player.x = block.x - player.speed - 1
+
+    # print(block.x - player.x - player.r)
 
 
 def shoot():
@@ -163,7 +216,7 @@ def main():
                 elif event.type == pygame.MOUSEBUTTONUP:
                     mouse_pressed = False
 
-            SCREEN.fill((255, 222, 178))
+            SCREEN.fill((0, 0, 0))
             update()
             pygame.display.flip()
 
