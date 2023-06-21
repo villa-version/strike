@@ -1,7 +1,6 @@
 import pygame, sys, math, time
 
-
-#WIDTH, HEIGHT = 1024, 680
+# WIDTH, HEIGHT = 1024, 680
 
 player = None
 enemies = []
@@ -11,14 +10,14 @@ intime = 0.07
 update_time = time.time()
 map = [
     'wwwwwwwwwwwwwwwwwwwwww',
-    'w  w              w  w',
-    'w  w              w  w',
-    'w     w   w  w       w',
     'w                    w',
-    'w     w       w      w',
     'w                    w',
-    'w  w      w      w   w',
-    'w  w             w   w',
+    'w                    w',
+    'w                    w',
+    'w         w          w',
+    'w                    w',
+    'w                    w',
+    'w                    w',
     'wwwwwwwwwwwwwwwwwwwwww'
 ]
 cells = []
@@ -27,7 +26,7 @@ for _ in range(len(map)):
 CELL_SIZE = 50
 CELLS_NUMB_X = len(map[0])
 CELLS_NUMB_Y = len(map)
-WIDTH, HEIGHT = CELL_SIZE*CELLS_NUMB_X, CELL_SIZE*CELLS_NUMB_Y
+WIDTH, HEIGHT = CELL_SIZE * CELLS_NUMB_X, CELL_SIZE * CELLS_NUMB_Y
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 
 
@@ -73,19 +72,19 @@ class Bullet:
     def calculate_speeds(self):
         dx = self.mouse_x - self.player_x
         dy = self.mouse_y - self.player_y
-        dc = math.sqrt(dx**2+dy**2)
+        dc = math.sqrt(dx ** 2 + dy ** 2)
         try:
-            cos = dx/dc
-            #print(cos)
+            cos = dx / dc
+            # print(cos)
         except ZeroDivisionError:
             cos = 0
         try:
-            sin = dy/dc
-            #print(sin)
+            sin = dy / dc
+            # print(sin)
         except ZeroDivisionError:
             sin = 0
 
-        return cos*2, sin*2
+        return cos * 2, sin * 2
 
 
 def setup():
@@ -133,7 +132,7 @@ def get_distance(pos):
 
 def find_out_cell_pos():
     global player
-    player.cell_x, player.cell_y = player.x//CELL_SIZE, player.y//CELL_SIZE
+    player.cell_x, player.cell_y = player.x // CELL_SIZE, player.y // CELL_SIZE
 
 
 def check_nearest_сells():
@@ -144,23 +143,34 @@ def check_nearest_сells():
         y = 0
         while y < 3:
             bx, by = int(starting_point[0] + x), int(starting_point[1] + y)
-            if cells[by][bx].type_block in 'block':
-                player.nearest_cells.append(cells[by][bx])
+            try:
+                if cells[by][bx].type_block in 'block':
+                    player.nearest_cells.append(cells[by][bx])
+            except IndexError:
+                pass
             y += 1
         x += 1
         # print(player.nearest_cells)
 
 
 def collision_with_wall(block):
-    d_left_side = player.speed >= block.x - player.x - player.r <= -1
-    d_right_side = player.speed >= player.x - block.x - CELL_SIZE <= -1
-    d_up_side = player.speed >= block.y - player.y <= -1
-    d_down_side = player.speed >= player.y - block.y - CELL_SIZE <= -1
+    dx, dy = get_distance((block.x, block.y))
 
-    if d_left_side and d_up_side and d_down_side:
-        player.x = block.x - player.speed - 1
+    d_left_side = player.speed >= dx - player.r
+    d_right_side = player.speed >= -dx - player.r - CELL_SIZE
+    d_up_side = player.speed >= dy - player.r
+    d_down_side = player.speed >= -dy - player.r - CELL_SIZE
 
-    # print(block.x - player.x - player.r)
+    if d_up_side and d_down_side:
+        if d_left_side and dx > 0:
+            player.x = block.x - player.r - player.speed
+        if d_right_side and dx < 0:
+            player.x = block.x + CELL_SIZE + player.r
+    if d_left_side and d_right_side:
+        if d_up_side and dy > 0:
+            player.y = block.y - player.r - player.speed
+        if d_down_side and dy < 0:
+            player.y = block.y + CELL_SIZE + player.r + player.speed
 
 
 def shoot():
