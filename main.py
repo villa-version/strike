@@ -156,21 +156,22 @@ def check_nearest_сells():
 def collision_with_wall(block):
     dx, dy = get_distance((block.x, block.y))
 
-    d_left_side = player.speed >= dx - player.r
-    d_right_side = player.speed >= -dx - player.r - CELL_SIZE
-    d_up_side = player.speed >= dy - player.r
-    d_down_side = player.speed >= -dy - player.r - CELL_SIZE
+    d_left_side = player.speed >= dx - player.r >= 0
+    d_right_side = player.speed >= -dx - player.r - CELL_SIZE >= 0
+    d_up_side = player.speed >= dy - player.r >= 0
+    d_down_side = player.speed >= -dy - player.r - CELL_SIZE >= 0
+    print(block.y >= player.y - player.r)
 
-    if d_up_side and d_down_side:
+    if block.y <= player.y - player.r and player.y + player.r <= block.y + CELL_SIZE:
         if d_left_side and dx > 0:
             player.x = block.x - player.r - player.speed
         if d_right_side and dx < 0:
             player.x = block.x + CELL_SIZE + player.r
-    if d_left_side and d_right_side:
-        if d_up_side and dy > 0:
-            player.y = block.y - player.r - player.speed
-        if d_down_side and dy < 0:
-            player.y = block.y + CELL_SIZE + player.r + player.speed
+    #if d_left_side and d_right_side:
+    #    if d_up_side and dy > 0:
+    #        player.y = block.y - player.r - player.speed
+    #    if d_down_side and dy < 0:
+    #        player.y = block.y + CELL_SIZE + player.r + player.speed
 
 
 def shoot():
