@@ -58,13 +58,16 @@ class Cell:
 
 class Bullet:
 
-    def __init__(self, x, y, r, m_pos, p_pos):
+    def __init__(self, x, y, r, m_pos, p_pos, nearest_cells, cell_x, cell_y):
         self.x = x
         self.y = y
         self.r = r
         self.mouse_x, self.mouse_y = m_pos
         self.player_x, self.player_y = p_pos
         self.speed_x, self.speed_y = self.calculate_speeds()
+        self.nearest_cells = nearest_cells
+        self.cell_x = cell_x
+        self.cell_y = cell_y
 
     def draw(self):
         pygame.draw.circle(SCREEN, (0, 0, 0), (self.x, self.y), self.r)
@@ -107,11 +110,14 @@ def update():
     global player
     move_player()
     move_bullet()
-    destroy_bullets()
     shoot()
     draw_objects()
     find_out_cell_pos()
-    check_nearest_сells()
+    check_nearest_сells(player)
+    for bullet in bullets[:]:
+        check_nearest_сells(bullet)
+        destroy_bullet_by_block(bullet)
+        bullet.nearest_cells.clear()
     for cell in player.nearest_cells:
         collision_with_wall(cell)
     player.nearest_cells.clear()
@@ -135,9 +141,8 @@ def find_out_cell_pos():
     player.cell_x, player.cell_y = player.x // CELL_SIZE, player.y // CELL_SIZE
 
 
-def check_nearest_сells():
-    global player
-    starting_point = (player.cell_x - 1, player.cell_y - 1)
+def check_nearest_сells(main_obj):
+    starting_point = (main_obj.cell_x - 1, main_obj.cell_y - 1)
     x = 0
     while x < 3:
         y = 0
@@ -145,12 +150,19 @@ def check_nearest_сells():
             bx, by = int(starting_point[0] + x), int(starting_point[1] + y)
             try:
                 if cells[by][bx].type_block in 'block':
-                    player.nearest_cells.append(cells[by][bx])
+                    main_obj.nearest_cells.append(cells[by][bx])
             except IndexError:
                 pass
             y += 1
         x += 1
-        # print(player.nearest_cells)
+
+
+def destroy_bullet_by_block(bullet):
+    for block in bullet.nearest_cells:
+        if block.y <= bullet.y <= block.y + CELL_SIZE:
+            print(1)
+            del bullet
+            return
 
 
 def check_stay_in_place_y(main_obj):
@@ -192,7 +204,7 @@ def shoot():
     if mouse_pressed:
         if time.time() - update_time >= intime:
             update_time = time.time()
-            bullets.append(Bullet(player.x, player.y, 2, pygame.mouse.get_pos(), (player.x, player.y)))
+            bullets.append(Bullet(player.x, player.y, 2, pygame.mouse.get_pos(), (player.x, player.y), [], 0, 0))
 
 
 def move_bullet():
@@ -200,15 +212,6 @@ def move_bullet():
     for bullet in bullets:
         bullet.x += bullet.speed_x
         bullet.y += bullet.speed_y
-
-
-def destroy_bullets():
-    global bullets
-    for bullet in bullets[:]:
-        if 0 > bullet.x or WIDTH < bullet.x:
-            bullets.remove(bullet)
-        elif 0 > bullet.y or HEIGHT < bullet.y:
-            bullets.remove(bullet)
 
 
 def move_player():
