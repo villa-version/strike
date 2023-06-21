@@ -153,6 +153,20 @@ def check_nearest_сells():
         # print(player.nearest_cells)
 
 
+def check_stay_in_place_y(main_obj):
+    if main_obj.y <= player.y - player.r <= main_obj.y + CELL_SIZE:
+        return True
+    elif main_obj.y <= player.y + player.r <= main_obj.y + CELL_SIZE:
+        return True
+
+
+def check_stay_in_place_x(main_obj):
+    if main_obj.x <= player.x - player.r <= main_obj.x + CELL_SIZE:
+        return True
+    elif main_obj.x <= player.x + player.r <= main_obj.x + CELL_SIZE:
+        return True
+
+
 def collision_with_wall(block):
     dx, dy = get_distance((block.x, block.y))
 
@@ -160,18 +174,17 @@ def collision_with_wall(block):
     d_right_side = player.speed >= -dx - player.r - CELL_SIZE >= 0
     d_up_side = player.speed >= dy - player.r >= 0
     d_down_side = player.speed >= -dy - player.r - CELL_SIZE >= 0
-    print(block.y >= player.y - player.r)
 
-    if block.y <= player.y - player.r and player.y + player.r <= block.y + CELL_SIZE:
-        if d_left_side and dx > 0:
+    if check_stay_in_place_y(main_obj=block):
+        if d_left_side:
             player.x = block.x - player.r - player.speed
-        if d_right_side and dx < 0:
-            player.x = block.x + CELL_SIZE + player.r
-    #if d_left_side and d_right_side:
-    #    if d_up_side and dy > 0:
-    #        player.y = block.y - player.r - player.speed
-    #    if d_down_side and dy < 0:
-    #        player.y = block.y + CELL_SIZE + player.r + player.speed
+        if d_right_side:
+            player.x = block.x + CELL_SIZE + player.r + player.speed
+    if check_stay_in_place_x(main_obj=block):
+        if d_up_side:
+            player.y = block.y - player.r - player.speed
+        if d_down_side:
+            player.y = block.y + CELL_SIZE + player.r + player.speed
 
 
 def shoot():
