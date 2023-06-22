@@ -32,10 +32,12 @@ SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 
 class Player:
 
-    def __init__(self, x, y, speed, r, cell_x, cell_y, nearest_cells):
+    def __init__(self, x, y, speed_x, speed_y, r, status, cell_x, cell_y, nearest_cells):
         self.x = x
         self.y = y
-        self.speed = speed
+        self.speed_x = speed_x
+        self.speed_y = speed_y
+        self.status = status
         self.r = r
         self.cell_x = cell_x
         self.cell_y = cell_y
@@ -46,11 +48,11 @@ class Player:
 
 
 class Cell:
-    def __init__(self, x, y, fill, type_b):
+    def __init__(self, x, y, fill, status):
         self.x = x
         self.y = y
         self.fill = fill
-        self.type_block = type_b
+        self.status = status
 
     def draw(self):
         pygame.draw.rect(SCREEN, self.fill, pygame.Rect(self.x, self.y, CELL_SIZE, CELL_SIZE))
@@ -58,10 +60,11 @@ class Cell:
 
 class Bullet:
 
-    def __init__(self, x, y, r, m_pos, p_pos, nearest_cells, cell_x, cell_y):
+    def __init__(self, x, y, r, status, m_pos, p_pos, nearest_cells, cell_x, cell_y):
         self.x = x
         self.y = y
         self.r = r
+        self.status = status
         self.mouse_x, self.mouse_y = m_pos
         self.player_x, self.player_y = p_pos
         self.speed_x, self.speed_y = self.calculate_speeds()
@@ -93,7 +96,7 @@ class Bullet:
 def setup():
     global player
     build_map()
-    player = Player(WIDTH // 2, HEIGHT // 2, 1 / 3.5, 15, 0, 0, [])
+    player = Player(WIDTH // 2, HEIGHT // 2, 1 / 3.5, 1 / 3.5, 15, 'player', 0, 0, [])
 
 
 def build_map():
@@ -116,10 +119,11 @@ def update():
     check_nearest_сells(player)
     for bullet in bullets[:]:
         check_nearest_сells(bullet)
-        destroy_bullet_by_block(bullet)
+        for block in bullet.nearest_cells:
+            collision(block, bullet)
         bullet.nearest_cells.clear()
-    for cell in player.nearest_cells:
-        collisions_operations(cell, player)
+    for block in player.nearest_cells:
+        collision(block, player)
     player.nearest_cells.clear()
 
 
@@ -145,20 +149,12 @@ def check_nearest_сells(main_obj):
         while y < 3:
             bx, by = int(starting_point[0] + x), int(starting_point[1] + y)
             try:
-                if cells[by][bx].type_block in 'block':
+                if cells[by][bx].status in 'block':
                     main_obj.nearest_cells.append(cells[by][bx])
             except IndexError:
                 pass
             y += 1
         x += 1
-
-
-def destroy_bullet_by_block(bullet):
-    for block in bullet.nearest_cells:
-        if block.y <= bullet.y <= block.y + CELL_SIZE:
-            print(1)
-            del bullet
-            return
 
 
 def check_stay_in_place_y(main_obj, obj):
@@ -175,32 +171,36 @@ def check_stay_in_place_x(main_obj, obj):
         return True
 
 
-def collisions_operations(block, obj):
-    dl, dr, du, dd = check_distance(block, obj)
-    collision(dl, dr, du, dd, block, obj)
-
-
-def check_distance(block, obj):
+def collision(block, obj):
     dx, dy = block.x - obj.x, block.y - obj.y
 
-    d_left_side = obj.speed >= dx - obj.r >= 0
-    d_right_side = obj.speed >= -dx - obj.r - CELL_SIZE >= 0
-    d_up_side = obj.speed >= dy - obj.r >= 0
-    d_down_side = obj.speed >= -dy - obj.r - CELL_SIZE >= 0
-    return d_left_side, d_right_side, d_up_side, d_down_side
+    d_left_side = obj.speed_x >= dx - obj.r >= 0
+    d_right_side = obj.speed_x >= -dx - obj.r - CELL_SIZE >= 0
+    d_up_side = obj.speed_y >= dy - obj.r >= 0
+    d_down_side = obj.speed_y >= -dy - obj.r - CELL_SIZE >= 0
 
-
-def collision(dl, dr, du, dd, block, obj):
-    if check_stay_in_place_y(main_obj=block, obj=obj):
-        if dl:
-            obj.x = block.x - obj.r - obj.speed
-        if dr:
-            obj.x = block.x + CELL_SIZE + obj.r + obj.speed
-    if check_stay_in_place_x(main_obj=block, obj=obj):
-        if du:
-            obj.y = block.y - obj.r - obj.speed
-        if dd:
-            obj.y = block.y + CELL_SIZE + obj.r + obj.speed
+    if check_stay_in_place_y(block, obj):
+        if d_left_side:
+            if obj.status in 'player':
+                obj.x = block.x - obj.r - obj.speed_x
+            else:
+                print('collide')
+        if d_right_side:
+            if obj.status in 'player':
+                obj.x = block.x + CELL_SIZE + obj.r + obj.speed_x
+            else:
+                print('collide')
+    if check_stay_in_place_x(block, obj):
+        if d_up_side:
+            if obj.status in 'player':
+                obj.y = block.y - obj.r - obj.speed_y
+            else:
+                print('collide')
+        if d_down_side:
+            if obj.status in 'player':
+                obj.y = block.y + CELL_SIZE + obj.r + obj.speed_y
+            else:
+                print('collide')
 
 
 def shoot():
@@ -208,7 +208,7 @@ def shoot():
     if mouse_pressed:
         if time.time() - update_time >= intime:
             update_time = time.time()
-            bullets.append(Bullet(player.x, player.y, 2, pygame.mouse.get_pos(), (player.x, player.y), [], 0, 0))
+            bullets.append(Bullet(player.x, player.y, 2, 'bullet', pygame.mouse.get_pos(), (player.x, player.y), [], 0, 0))
 
 
 def move_bullet():
@@ -222,13 +222,13 @@ def move_player():
     global player
     key = pygame.key.get_pressed()
     if key[pygame.K_w]:
-        player.y -= player.speed
+        player.y -= player.speed_y
     if key[pygame.K_s]:
-        player.y += player.speed
+        player.y += player.speed_y
     if key[pygame.K_a]:
-        player.x -= player.speed
+        player.x -= player.speed_x
     if key[pygame.K_d]:
-        player.x += player.speed
+        player.x += player.speed_x
 
 
 def main():
