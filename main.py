@@ -119,7 +119,7 @@ def update():
         destroy_bullet_by_block(bullet)
         bullet.nearest_cells.clear()
     for cell in player.nearest_cells:
-        collision_with_wall(cell)
+        collision(cell) = check_distance(cell)
     player.nearest_cells.clear()
 
 
@@ -130,10 +130,6 @@ def draw_objects():
     for bullet in bullets:
         bullet.draw()
     player.draw()
-
-
-def get_distance(pos):
-    return pos[0] - player.x, pos[1] - player.y
 
 
 def find_out_cell_pos():
@@ -179,23 +175,25 @@ def check_stay_in_place_x(main_obj):
         return True
 
 
-def collision_with_wall(block):
-    dx, dy = get_distance((block.x, block.y))
+def check_distance(block):
+    dx, dy = block.x - player.x, block.y - player.y
 
     d_left_side = player.speed >= dx - player.r >= 0
     d_right_side = player.speed >= -dx - player.r - CELL_SIZE >= 0
     d_up_side = player.speed >= dy - player.r >= 0
     d_down_side = player.speed >= -dy - player.r - CELL_SIZE >= 0
+    return d_left_side, d_right_side, d_up_side, d_down_side
 
+def collision(dl, dr, du, dd, block)
     if check_stay_in_place_y(main_obj=block):
-        if d_left_side:
+        if dl:
             player.x = block.x - player.r - player.speed
-        if d_right_side:
+        if dr:
             player.x = block.x + CELL_SIZE + player.r + player.speed
     if check_stay_in_place_x(main_obj=block):
-        if d_up_side:
+        if du:
             player.y = block.y - player.r - player.speed
-        if d_down_side:
+        if dd:
             player.y = block.y + CELL_SIZE + player.r + player.speed
 
 
