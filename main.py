@@ -119,7 +119,7 @@ def update():
         destroy_bullet_by_block(bullet)
         bullet.nearest_cells.clear()
     for cell in player.nearest_cells:
-        collision(cell) = check_distance(cell)
+        collisions_operations(cell, player)
     player.nearest_cells.clear()
 
 
@@ -161,40 +161,46 @@ def destroy_bullet_by_block(bullet):
             return
 
 
-def check_stay_in_place_y(main_obj):
-    if main_obj.y <= player.y - player.r <= main_obj.y + CELL_SIZE:
+def check_stay_in_place_y(main_obj, obj):
+    if main_obj.y <= obj.y - obj.r <= main_obj.y + CELL_SIZE:
         return True
-    elif main_obj.y <= player.y + player.r <= main_obj.y + CELL_SIZE:
-        return True
-
-
-def check_stay_in_place_x(main_obj):
-    if main_obj.x <= player.x - player.r <= main_obj.x + CELL_SIZE:
-        return True
-    elif main_obj.x <= player.x + player.r <= main_obj.x + CELL_SIZE:
+    elif main_obj.y <= obj.y + obj.r <= main_obj.y + CELL_SIZE:
         return True
 
 
-def check_distance(block):
-    dx, dy = block.x - player.x, block.y - player.y
+def check_stay_in_place_x(main_obj, obj):
+    if main_obj.x <= obj.x - obj.r <= main_obj.x + CELL_SIZE:
+        return True
+    elif main_obj.x <= obj.x + obj.r <= main_obj.x + CELL_SIZE:
+        return True
 
-    d_left_side = player.speed >= dx - player.r >= 0
-    d_right_side = player.speed >= -dx - player.r - CELL_SIZE >= 0
-    d_up_side = player.speed >= dy - player.r >= 0
-    d_down_side = player.speed >= -dy - player.r - CELL_SIZE >= 0
+
+def collisions_operations(block, obj):
+    dl, dr, du, dd = check_distance(block, obj)
+    collision(dl, dr, du, dd, block, obj)
+
+
+def check_distance(block, obj):
+    dx, dy = block.x - obj.x, block.y - obj.y
+
+    d_left_side = obj.speed >= dx - obj.r >= 0
+    d_right_side = obj.speed >= -dx - obj.r - CELL_SIZE >= 0
+    d_up_side = obj.speed >= dy - obj.r >= 0
+    d_down_side = obj.speed >= -dy - obj.r - CELL_SIZE >= 0
     return d_left_side, d_right_side, d_up_side, d_down_side
 
-def collision(dl, dr, du, dd, block)
-    if check_stay_in_place_y(main_obj=block):
+
+def collision(dl, dr, du, dd, block, obj):
+    if check_stay_in_place_y(main_obj=block, obj=obj):
         if dl:
-            player.x = block.x - player.r - player.speed
+            obj.x = block.x - obj.r - obj.speed
         if dr:
-            player.x = block.x + CELL_SIZE + player.r + player.speed
-    if check_stay_in_place_x(main_obj=block):
+            obj.x = block.x + CELL_SIZE + obj.r + obj.speed
+    if check_stay_in_place_x(main_obj=block, obj=obj):
         if du:
-            player.y = block.y - player.r - player.speed
+            obj.y = block.y - obj.r - obj.speed
         if dd:
-            player.y = block.y + CELL_SIZE + player.r + player.speed
+            obj.y = block.y + CELL_SIZE + obj.r + obj.speed
 
 
 def shoot():
